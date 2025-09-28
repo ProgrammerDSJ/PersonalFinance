@@ -56,44 +56,44 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
 
-  console.log("Login attempt for email:", email);
+  console.log("Login attempt for email:", email); // Debug log
 
   try {
-    // Query user from database
+    // Query user from database - use .maybeSingle() instead of .single()
     const { data: user, error } = await supabase
       .from("users")
       .select("user_id, email, password_hash, username")
       .eq("email", email)
       .maybeSingle();
 
-    console.log("Database query result:", { user: user ? "found" : "not found", error });
+    console.log("Database query result:", { user: user ? "found" : "not found", error }); // Debug log
 
     // Check if user exists
     if (error) {
-      console.log("Database error:", error);
+      console.log("Database error:", error); // Debug log
       return res.status(500).json({ error: "Database error" });
     }
 
     if (!user) {
-      console.log("User not found in database");
+      console.log("User not found in database"); // Debug log
       return res.status(400).json({ error: "Invalid email or password" });
     }
 
     // Check if password_hash exists
     if (!user.password_hash) {
-      console.log("No password hash found for user");
+      console.log("No password hash found for user"); // Debug log
       return res.status(400).json({ error: "Invalid email or password" });
     }
 
     // Compare passwords
     const validPassword = await bcrypt.compare(password, user.password_hash);
-    console.log("Password validation:", validPassword);
+    console.log("Password validation:", validPassword); // Debug log
 
     if (!validPassword) {
       return res.status(400).json({ error: "Invalid email or password" });
     }
 
-    console.log("Login successful for user:", user.username);
+    console.log("Login successful for user:", user.username); // Debug log
 
     res.json({
       message: "Login successful",
@@ -108,139 +108,79 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Add transaction - Updated to handle custom categories and dates
+// Add transaction with duplicate prevention
 app.post('/api/transactions', async (req, res) => {
-  const { user_id, transaction_type, category, description, amount, transaction_date } = req.body;
+  const { user_id, transaction_type, category, title, description, amount } = req.body;
 
-  console.log("Adding transaction:", { user_id, transaction_type, category, description, amount, transaction_date });
-
-  // Basic validation
-  if (!user_id || !transaction_type || !category || !amount || !transaction_date) {
+  // Input validation
+  if (!user_id || !transaction_type || !category || !amount) {
     return res.status(400).json({ 
       success: false, 
-      error: "Missing required fields: user_id, transaction_type, category, amount, transaction_date" 
+      error: "Missing required fields: user_id, transaction_type, category, amount" 
+    });
+  }
+
+  if (typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({ 
+      success: false, 
+      error: "Amount must be a positive number" 
     });
   }
 
   try {
-    // First, save custom category if it's not a default one
-    const defaultCategories = ['Food', 'Travel', 'Entertainment'];
-    if (!defaultCategories.includes(category)) {
-      // Try to insert the category (ignore if already exists due to UNIQUE constraint)
-      await supabase
-        .from('user_categories')
-        .insert([
-          {
-            user_id: parseInt(user_id),
-            category_name: category
-          }
-        ])
-        .select();
-      // Note: This might fail due to UNIQUE constraint, but that's okay - category already exists
+    // Check for potential duplicates (same user, type, category, amount within last 30 seconds)
+    const thirtySecondsAgo = new Date(Date.now() - 30000);
+    
+    const { data: recentTransactions } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user_id)
+      .eq('transaction_type', transaction_type)
+      .eq('category', category)
+      .eq('amount', amount)
+      .gte('transaction_date', thirtySecondsAgo.toISOString());
+
+    // If we find identical transactions within 30 seconds, it's likely a duplicate
+    if (recentTransactions && recentTransactions.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Duplicate transaction detected. Please wait before adding the same transaction again." 
+      });
     }
 
-    // Add the transaction with the specified date
-    const transactionDateTime = new Date(transaction_date);
-    
     const { data, error } = await supabase
       .from('transactions')
       .insert([
         {
-          user_id: parseInt(user_id),
+          user_id,
           transaction_type,
           category,
+          title,
           description,
-          amount: parseFloat(amount),
-          transaction_date: transactionDateTime.toISOString()
+          amount,
+          transaction_date: new Date() // can omit since default is CURRENT_TIMESTAMP
         }
       ])
-      .select();
+      .select(); // Return the inserted data
 
-    if (error) {
-      console.error("Supabase error:", error);
-      throw error;
-    }
+    if (error) throw error;
     
-    console.log("Transaction added successfully:", data);
-    res.json({ success: true, data });
+    console.log("Transaction added successfully:", data[0]); // Debug log
+    res.json({ success: true, data: data[0] });
   } catch (err) {
     console.error("Error adding transaction:", err.message);
     res.status(400).json({ success: false, error: err.message });
   }
 });
 
-// Get user's custom categories
-app.get('/api/categories/:user_id', async (req, res) => {
-  const user_id = req.params.user_id;
-  
-  console.log("Fetching categories for user_id:", user_id);
-
-  try {
-    const { data, error } = await supabase
-      .from('user_categories')
-      .select('category_name')
-      .eq('user_id', user_id)
-      .order('category_name');
-
-    if (error) {
-      console.error("Supabase categories fetch error:", error);
-      throw error;
-    }
-    
-    console.log("Fetched categories:", data ? data.length : 0, "categories");
-    res.json({ success: true, data });
-  } catch (err) {
-    console.error("Error fetching categories:", err.message);
-    res.status(400).json({ success: false, error: err.message });
-  }
-});
-
-// Fetch transactions for specific date
-app.get('/api/transactions/:user_id/:date', async (req, res) => {
-  const user_id = req.params.user_id;
-  const requestedDate = req.params.date;
-  
-  console.log("Fetching transactions for user_id:", user_id, "date:", requestedDate);
-
-  try {
-    // Parse the requested date and create start/end of day range
-    const selectedDate = new Date(requestedDate);
-    const startOfDay = new Date(selectedDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(selectedDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    console.log("Date range:", { 
-      startOfDay: startOfDay.toISOString(), 
-      endOfDay: endOfDay.toISOString() 
-    });
-
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user_id)
-      .gte('transaction_date', startOfDay.toISOString())
-      .lte('transaction_date', endOfDay.toISOString())
-      .order('transaction_date', { ascending: true });
-
-    if (error) {
-      console.error("Supabase fetch error:", error);
-      throw error;
-    }
-    
-    console.log("Fetched transactions:", data ? data.length : 0, "records");
-    res.json({ success: true, data });
-  } catch (err) {
-    console.error("Error fetching transactions:", err.message);
-    res.status(400).json({ success: false, error: err.message });
-  }
-});
-
-// Fetch today's transactions - Enhanced with better logging (DEPRECATED - use date-specific endpoint)
+// Fetch today's transactions
 app.get('/api/transactions/:user_id', async (req, res) => {
   const user_id = req.params.user_id;
-  
-  console.log("Fetching TODAY's transactions for user_id:", user_id);
+
+  // Input validation
+  if (!user_id) {
+    return res.status(400).json({ success: false, error: "User ID is required" });
+  }
 
   // Compute today's range
   const now = new Date();
@@ -249,11 +189,6 @@ app.get('/api/transactions/:user_id', async (req, res) => {
   const endOfDay = new Date(now);
   endOfDay.setHours(23, 59, 59, 999);
 
-  console.log("Date range:", { 
-    startOfDay: startOfDay.toISOString(), 
-    endOfDay: endOfDay.toISOString() 
-  });
-
   try {
     const { data, error } = await supabase
       .from('transactions')
@@ -263,12 +198,9 @@ app.get('/api/transactions/:user_id', async (req, res) => {
       .lte('transaction_date', endOfDay.toISOString())
       .order('transaction_date', { ascending: true });
 
-    if (error) {
-      console.error("Supabase fetch error:", error);
-      throw error;
-    }
+    if (error) throw error;
     
-    console.log("Fetched transactions:", data ? data.length : 0, "records");
+    console.log(`Fetched ${data.length} transactions for user ${user_id}`); // Debug log
     res.json({ success: true, data });
   } catch (err) {
     console.error("Error fetching transactions:", err.message);
