@@ -43,6 +43,7 @@ th {
   text-align: center;
   color: #888;
   font-style: italic;
+  padding: 20px !important;
 }
 
 /* Modal Styles */
@@ -50,8 +51,10 @@ th {
   display: none;
   position: fixed;
   z-index: 1000;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
+  left: 0; 
+  top: 0;
+  width: 100%; 
+  height: 100%;
   overflow: auto;
   background-color: rgba(0,0,0,0.5);
 }
@@ -68,12 +71,18 @@ th {
 
 #close-modal {
   position: absolute;
-  top: 10px; right: 15px;
+  top: 10px; 
+  right: 15px;
   font-size: 24px;
   cursor: pointer;
+  color: #aaa;
 }
 
-/* Form styling improvements */
+#close-modal:hover {
+  color: #000;
+}
+
+/* Form styling */
 .modal-content form {
   display: flex;
   flex-direction: column;
@@ -92,6 +101,28 @@ th {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#custom-category-input {
+  margin-top: 10px;
+  display: none;
+}
+
+#custom-category-input label {
+  margin-bottom: 5px;
+  display: block;
+  font-weight: bold;
+}
+
+#custom-category {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
 }
 
 .modal-content textarea {
@@ -99,25 +130,17 @@ th {
   min-height: 60px;
 }
 
-.modal-content button[type="submit"] {
-  margin-top: 15px;
-  padding: 12px;
+.modal-content button {
   background-color: #0070f3;
   color: white;
   border: none;
+  padding: 10px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s;
+  margin-top: 10px;
+  float: none;
 }
 
-.modal-content button[type="submit"]:hover:not(:disabled) {
+.modal-content button:hover {
   background-color: #0059c9;
-}
-
-/* Disabled button styling */
-.modal-content button[type="submit"]:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-  opacity: 0.7;
 }
