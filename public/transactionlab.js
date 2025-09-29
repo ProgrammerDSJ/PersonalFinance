@@ -1,26 +1,24 @@
-// Get user data from localStorage (set during login)
 let user = null;
-let selectedDate = new Date().toISOString().split('T')[0]; // Today's date
 
-function init() {
-  // Get user data from localStorage instead of Supabase auth
-  const userId = localStorage.getItem('userId');
-  const username = localStorage.getItem('username');
-  
-  if (!userId) {
+async function init() {
+  // Since we're using custom authentication, we need to check if user is logged in
+  // For now, we'll simulate getting user from session storage or implement proper session management
+  const storedUser = sessionStorage.getItem('currentUser');
+  if (!storedUser) {
     alert("Please login first");
     window.location.href = '/login.html';
     return;
   }
   
-  user = { id: userId, username: username };
-  
-  // Set today's date as default
-  document.getElementById('transaction-date').value = selectedDate;
-  
-  // Load user categories and transactions
-  loadUserCategories();
-  fetchTransactions();
+  try {
+    user = JSON.parse(storedUser);
+    console.log("User loaded:", user);
+    fetchTransactions();
+  } catch (error) {
+    console.error("Error parsing user data:", error);
+    alert("Please login again");
+    window.location.href = '/login.html';
+  }
 }
 
 // Helper: show loading state in a table
@@ -33,84 +31,53 @@ function setLoadingState(tableId) {
   `;
 }
 
-async function loadUserCategories() {
-  if (!user) return;
-
-  try {
-    const res = await fetch(`/api/categories/${user.id}`);
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    
-    const result = await res.json();
-    if (result.success) {
-      const categorySelect = document.getElementById('transaction-category');
-      const userCategories = result.data || [];
-      
-      // Remove existing user categories (keep default ones)
-      const options = categorySelect.querySelectorAll('option');
-      options.forEach(option => {
-        if (!['', 'Food', 'Travel', 'Entertainment', 'Other'].includes(option.value)) {
-          option.remove();
-        }
-      });
-      
-      // Add user's custom categories
-      userCategories.forEach(category => {
-        const option = document.createElement('option');
-        option.value = category.category_name;
-        option.textContent = category.category_name;
-        // Insert before "Other" option
-        categorySelect.insertBefore(option, categorySelect.querySelector('option[value="Other"]'));
-      });
-    }
-  } catch (err) {
-    console.error("Failed to load user categories:", err);
-  }
-}
-
 async function fetchTransactions() {
-  if (!user) return;
+  if (!user || !user.userId) {
+    console.error("No user ID available");
+    return;
+  }
 
   // Show loading while fetching
   setLoadingState("income-table");
   setLoadingState("expense-table");
 
   try {
-    const res = await fetch(`/api/transactions/${user.id}/${selectedDate}`);
-    
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-    
+    console.log("Fetching transactions for user:", user.userId);
+    const res = await fetch(`/api/transactions/${user.userId}`);
     const result = await res.json();
+
+    console.log("Fetch result:", result);
 
     if (!result.success) {
       console.error("Error fetching transactions:", result.error);
-      renderTable("income-table", [], "Error loading income records");
-      renderTable("expense-table", [], "Error loading expense records");
+      renderTable("income-table", [], "Error loading income records.");
+      renderTable("expense-table", [], "Error loading expense records.");
       return;
     }
 
     const allTransactions = result.data || [];
+    console.log("All transactions:", allTransactions);
 
     // Split into income and expenses
     const incomeData = allTransactions.filter(tx => tx.transaction_type === "Income");
     const expenseData = allTransactions.filter(tx => tx.transaction_type === "Expense");
 
-    const formattedDate = new Date(selectedDate).toLocaleDateString();
-    renderTable("income-table", incomeData, `No income records found for ${formattedDate}`);
-    renderTable("expense-table", expenseData, `No expense records found for ${formattedDate}`);
-    
+    console.log("Income transactions:", incomeData);
+    console.log("Expense transactions:", expenseData);
+
+    renderTable("income-table", incomeData, "No income records found for today.");
+    renderTable("expense-table", expenseData, "No expense records found for today.");
   } catch (err) {
     console.error("Fetch transactions failed:", err);
-    renderTable("income-table", [], "Error loading income records");
-    renderTable("expense-table", [], "Error loading expense records");
+    renderTable("income-table", [], "Error loading income records.");
+    renderTable("expense-table", [], "Error loading expense records.");
   }
 }
 
 function renderTable(tableId, transactions, emptyMessage) {
   const tableBody = document.querySelector(`#${tableId} tbody`);
   
-  // Clear out old rows
+  // Clear out old rows (including "Loading...")
   tableBody.innerHTML = "";
 
   if (transactions.length === 0) {
@@ -123,15 +90,17 @@ function renderTable(tableId, transactions, emptyMessage) {
     row.appendChild(cell);
     tableBody.appendChild(row);
   } else {
-    // Render transactions with new column order
+    // Render transactions with correct column order: Date, Category, Description, Amount
     transactions.forEach(tx => {
       const row = document.createElement("tr");
-      const transactionDate = new Date(tx.transaction_date);
+      const date = new Date(tx.transaction_date);
+      const formattedDate = date.toLocaleDateString('en-IN');
+      
       row.innerHTML = `
-        <td>${transactionDate.toLocaleDateString()}</td>
-        <td>${tx.category || "-"}</td>
-        <td>${tx.description || "-"}</td>
-        <td>₹${tx.amount}</td>
+        <td>${formattedDate}</td>
+        <td>${tx.category || '-'}</td>
+        <td>${tx.description || tx.title || '-'}</td>
+        <td>₹${tx.amount.toFixed(2)}</td>
       `;
       tableBody.appendChild(row);
     });
@@ -143,92 +112,141 @@ const modal = document.getElementById("transaction-modal");
 const btn = document.getElementById("add-transaction-btn");
 const span = document.getElementById("close-modal");
 
-btn.onclick = () => modal.style.display = "block";
-span.onclick = () => modal.style.display = "none";
-window.onclick = (e) => { if(e.target === modal) modal.style.display = "none"; }
+btn.onclick = () => {
+  modal.style.display = "block";
+  // Set default date to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById("transaction-date").value = today;
+};
 
-// Category selection logic
-document.getElementById('transaction-category').addEventListener('change', function() {
-  const customInput = document.getElementById('custom-category-input');
-  if (this.value === 'Other') {
-    customInput.style.display = 'block';
-    document.getElementById('custom-category').required = true;
+span.onclick = () => {
+  modal.style.display = "none";
+  resetForm();
+};
+
+window.onclick = (e) => { 
+  if(e.target === modal) {
+    modal.style.display = "none";
+    resetForm();
+  }
+}
+
+// Handle category selection and custom category input
+document.getElementById("transaction-category").addEventListener("change", function() {
+  const customInput = document.getElementById("custom-category-input");
+  if (this.value === "Others") {
+    customInput.style.display = "block";
+    document.getElementById("custom-category").required = true;
   } else {
-    customInput.style.display = 'none';
-    document.getElementById('custom-category').required = false;
-    document.getElementById('custom-category').value = '';
+    customInput.style.display = "none";
+    document.getElementById("custom-category").required = false;
+    document.getElementById("custom-category").value = "";
   }
 });
 
-// Date change listener
-document.getElementById('transaction-date').addEventListener('change', function() {
-  selectedDate = this.value;
-  fetchTransactions(); // Reload transactions for selected date
-});
+// Reset form function
+function resetForm() {
+  const form = document.getElementById("transaction-form");
+  form.reset();
+  
+  // Hide custom category input
+  document.getElementById("custom-category-input").style.display = "none";
+  document.getElementById("custom-category").required = false;
+  
+  // Re-enable submit button if it was disabled
+  const submitBtn = form.querySelector('button[type="submit"]');
+  submitBtn.disabled = false;
+  submitBtn.textContent = "Add Transaction";
+}
 
-// Form Submission
+// Form Submission with duplicate prevention
 document.getElementById("transaction-form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  
+  // Prevent multiple submissions by disabling the button
+  if (submitBtn.disabled) {
+    return;
+  }
+  
+  // Disable button and show loading state
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Adding...";
+
   const type = document.getElementById("transaction-type").value;
-  const categorySelect = document.getElementById("transaction-category");
-  let category = categorySelect.value;
-  const customCategory = document.getElementById("custom-category").value.trim();
+  const date = document.getElementById("transaction-date").value;
+  let category = document.getElementById("transaction-category").value;
   const description = document.getElementById("transaction-description").value;
   const amount = parseFloat(document.getElementById("transaction-amount").value);
-  const transactionDate = document.getElementById("transaction-date").value;
 
   // Handle custom category
-  if (category === 'Other' && customCategory) {
+  if (category === "Others") {
+    const customCategory = document.getElementById("custom-category").value.trim();
+    if (!customCategory) {
+      alert("Please enter a custom category");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Add Transaction";
+      return;
+    }
     category = customCategory;
   }
 
-  if (!category || category === 'Other') {
-    alert("Please select a category or enter a custom category");
+  // Validate inputs
+  if (!type || !date || !category || !amount || amount <= 0) {
+    alert("Please fill in all required fields with valid values");
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Add Transaction";
     return;
   }
 
   try {
+    console.log("Submitting transaction:", {
+      user_id: user.userId,
+      transaction_type: type,
+      transaction_date: date,
+      category,
+      description,
+      amount
+    });
+
     const res = await fetch("/api/transactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        user_id: user.id,
+        user_id: user.userId,
         transaction_type: type,
+        transaction_date: date,
         category,
         description,
-        amount,
-        transaction_date: transactionDate
+        amount
       })
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
     const result = await res.json();
+    console.log("Add transaction result:", result);
 
     if (!result.success) {
-      alert("Error adding transaction");
+      alert(result.error || "Error adding transaction");
       console.error(result.error);
       return;
     }
 
-    // If it was a custom category, reload categories for future use
-    if (categorySelect.value === 'Other' && customCategory) {
-      await loadUserCategories();
-    }
-
-    // Clear the form
-    document.getElementById("transaction-form").reset();
-    document.getElementById('transaction-date').value = selectedDate; // Keep selected date
-    document.getElementById('custom-category-input').style.display = 'none';
+    // Success - close modal and refresh
     modal.style.display = "none";
+    resetForm();
     fetchTransactions(); // refresh after adding
+    alert("Transaction added successfully!");
     
   } catch (err) {
     console.error("Add transaction failed:", err);
     alert("Something went wrong while adding the transaction");
+  } finally {
+    // Re-enable button in case of error (success case is handled by resetForm)
+    if (submitBtn.disabled) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Add Transaction";
+    }
   }
 });
 
