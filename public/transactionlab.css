@@ -1,17 +1,83 @@
+/* Top Navigation Bar */
+.top-nav {
+  background-color: #0070f3;
+  padding: 0;
+  display: flex;
+  gap: 0;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.nav-link {
+  padding: 15px 30px;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.3s;
+  border-bottom: 3px solid transparent;
+}
+
+.nav-link:hover {
+  background-color: #0059c9;
+}
+
+.nav-link.active {
+  background-color: #0059c9;
+  border-bottom: 3px solid white;
+}
+
 body {
   font-family: Arial, sans-serif;
-  margin: 20px;
+  margin: 0;
+  padding: 0;
   background-color: #f4f4f4;
 }
 
 h1 {
   text-align: center;
-  margin-bottom: 10px;
+  margin: 20px 0;
+}
+
+.controls-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 20px 20px 20px;
+  gap: 20px;
+}
+
+.filter-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-container label {
+  font-weight: bold;
+  color: #333;
+}
+
+#date-filter {
+  padding: 8px 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+#date-filter:hover {
+  border-color: #0070f3;
+}
+
+#date-filter:focus {
+  outline: none;
+  border-color: #0070f3;
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1);
 }
 
 button {
-  float: right;
-  margin-bottom: 20px;
   padding: 8px 15px;
   cursor: pointer;
 }
@@ -20,6 +86,7 @@ button {
   display: flex;
   gap: 20px;
   justify-content: space-between;
+  margin: 0 20px;
 }
 
 table {
@@ -27,12 +94,15 @@ table {
   border-collapse: collapse;
   background-color: #fff;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  table-layout: fixed;
 }
 
 th, td {
   padding: 10px;
   border: 1px solid #ddd;
   text-align: left;
+  word-wrap: break-word;
+  vertical-align: middle;
 }
 
 th {
@@ -43,6 +113,61 @@ th {
   text-align: center;
   color: #888;
   font-style: italic;
+}
+
+/* Total Row Styling (inside table footer) */
+tfoot .total-row {
+  background-color: #f8f9fa;
+  border-top: 2px solid #333;
+}
+
+tfoot .total-row td {
+  padding: 12px 10px;
+  font-size: 16px;
+}
+
+#total-income strong {
+  color: #28a745;
+  font-size: 16px;
+}
+
+#total-expenses strong {
+  color: #dc3545;
+  font-size: 16px;
+}
+
+/* Amount Saved Section */
+.amount-saved-container {
+  text-align: center;
+  margin: 20px;
+  padding: 15px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  font-size: 18px;
+}
+
+.amount-saved-label {
+  font-weight: bold;
+  margin-right: 10px;
+  color: #333;
+}
+
+.amount-saved-value {
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.amount-saved-value.positive {
+  color: #28a745;
+}
+
+.amount-saved-value.zero {
+  color: #000;
+}
+
+.amount-saved-value.negative {
+  color: #dc3545;
 }
 
 /* Modal Styles */

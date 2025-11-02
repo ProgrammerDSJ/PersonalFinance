@@ -1,1 +1,35 @@
-<h1>Hello!!!</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <nav class="top-nav">
+    <a href="transactionlab.html" class="nav-link">Transaction Lab</a>
+    <a href="dashboard.html" class="nav-link active">Dashboard</a>
+  </nav>
+
+  <h1>Dashboard</h1>
+  
+  <div class="dashboard-content">
+    <p>Welcome to your Dashboard, <span id="username-display">User</span>!</p>
+    <!-- Add your dashboard content here -->
+  </div>
+
+  <script>
+    // Get user data from sessionStorage
+    const username = sessionStorage.getItem('username');
+    if (username) {
+      document.getElementById('username-display').textContent = username;
+    } else {
+      // If no session data, redirect to login
+      alert('Please login first');
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>

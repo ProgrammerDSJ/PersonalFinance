@@ -4,14 +4,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
 
-  if (!email || !password) {
-    alert("Please fill in all fields");
-    return;
-  }
-
   try {
-    console.log("Attempting login for:", email);
-    
     const response = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -19,26 +12,16 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     });
 
     const data = await response.json();
-    console.log("Login response:", data);
-
+    
     if (response.ok) {
-      // Store user data in session storage for the transaction lab
-      const userData = {
-        userId: data.userId,
-        username: data.username,
-        email: data.email
-      };
-      
-      sessionStorage.setItem('currentUser', JSON.stringify(userData));
-      console.log("User data stored:", userData);
-      
-      alert("Login successful! Redirecting to dashboard...");
-      window.location.href = data.redirect;
+      alert("Login successful!");
+      // Redirect with user data as URL parameters
+      window.location.href = `${data.redirect}?userId=${data.userId}&username=${encodeURIComponent(data.username)}&email=${encodeURIComponent(data.email)}`;
     } else {
-      alert(data.error || "Invalid email or password");
+      alert(data.error || "Login failed");
     }
   } catch (error) {
-    console.error("Login error:", error);
-    alert("Something went wrong. Please try again.");
+    console.error("Error:", error);
+    alert("Something went wrong. Try again.");
   }
 });

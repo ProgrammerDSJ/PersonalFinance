@@ -1,0 +1,47 @@
+/* Top Navigation Bar */
+.top-nav {
+  background-color: #0070f3;
+  padding: 0;
+  display: flex;
+  gap: 0;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.nav-link {
+  padding: 15px 30px;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.3s;
+  border-bottom: 3px solid transparent;
+}
+
+.nav-link:hover {
+  background-color: #0059c9;
+}
+
+.nav-link.active {
+  background-color: #0059c9;
+  border-bottom: 3px solid white;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+}
+
+h1 {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.dashboard-content {
+  margin: 0 20px;
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}

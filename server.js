@@ -188,44 +188,94 @@ app.post('/api/transactions', async (req, res) => {
   }
 });
 
-// Fetch today's transactions
+// Fetch transactions with filter support
 app.get('/api/transactions/:user_id', async (req, res) => {
   const user_id = req.params.user_id;
+  const filter = req.query.filter || 'today';
 
-  console.log("Fetching transactions for user_id:", user_id);
+  console.log("Fetching transactions for user_id:", user_id, "with filter:", filter);
 
   // Input validation
   if (!user_id) {
     return res.status(400).json({ success: false, error: "User ID is required" });
   }
 
-  // Compute today's range in local timezone
+  // Calculate date range based on filter
   const now = new Date();
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(now);
-  endOfDay.setHours(23, 59, 59, 999);
+  let startDate, endDate;
+
+  switch(filter) {
+    case 'today':
+      startDate = new Date(now);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(now);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    
+    case '7days':
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(now);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    
+    case '2weeks':
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 14);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(now);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    
+    case '1month':
+      startDate = new Date(now);
+      startDate.setMonth(now.getMonth() - 1);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(now);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    
+    case 'all':
+      // For all time, we don't set date filters
+      startDate = null;
+      endDate = null;
+      break;
+    
+    default:
+      startDate = new Date(now);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(now);
+      endDate.setHours(23, 59, 59, 999);
+  }
 
   console.log("Date range:", {
-    start: startOfDay.toISOString(),
-    end: endOfDay.toISOString()
+    start: startDate ? startDate.toISOString() : 'beginning of time',
+    end: endDate ? endDate.toISOString() : 'now',
+    filter: filter
   });
 
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('transactions')
       .select('*')
-      .eq('user_id', user_id)
-      .gte('transaction_date', startOfDay.toISOString())
-      .lte('transaction_date', endOfDay.toISOString())
-      .order('transaction_date', { ascending: false });
+      .eq('user_id', user_id);
+
+    // Only apply date filters if not 'all'
+    if (startDate && endDate) {
+      query = query
+        .gte('transaction_date', startDate.toISOString())
+        .lte('transaction_date', endDate.toISOString());
+    }
+
+    const { data, error } = await query.order('transaction_date', { ascending: false });
 
     if (error) {
       console.error("Supabase fetch error:", error);
       throw error;
     }
     
-    console.log(`Fetched ${data.length} transactions for user ${user_id}`);
+    console.log(`Fetched ${data.length} transactions for user ${user_id} with filter ${filter}`);
     console.log("Transactions:", data);
     res.json({ success: true, data });
   } catch (err) {
