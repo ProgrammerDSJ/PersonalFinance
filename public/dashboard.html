@@ -5,31 +5,86 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard</title>
   <link rel="stylesheet" href="dashboard.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
   <!-- Top Navigation Bar -->
   <nav class="top-nav">
     <a href="transactionlab.html" class="nav-link">Transaction Lab</a>
     <a href="dashboard.html" class="nav-link active">Dashboard</a>
+    <a href="aimode.html" class="nav-link">AI Mode</a>
   </nav>
 
   <h1>Dashboard</h1>
   
   <div class="dashboard-content">
-    <p>Welcome to your Dashboard, <span id="username-display">User</span>!</p>
-    <!-- Add your dashboard content here -->
+    <p class="welcome-message">Welcome to your Dashboard, <span id="username-display">User</span>!</p>
+    
+    <!-- Charts Container -->
+    <div class="charts-container">
+      
+      <!-- Pie Chart Section -->
+      <div class="chart-wrapper">
+        <div class="chart-header">
+          <h2>Distribution Analysis</h2>
+          <div class="chart-controls">
+            <select id="pie-chart-filter" class="chart-filter">
+              <option value="income">Income</option>
+              <option value="expense">Expenses</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-canvas-wrapper">
+          <canvas id="pie-chart"></canvas>
+        </div>
+        <div id="pie-chart-legend" class="chart-legend"></div>
+      </div>
+
+      <!-- Line Chart Section -->
+      <div class="chart-wrapper">
+        <div class="chart-header">
+          <h2>Trend Analysis</h2>
+          <div class="chart-controls">
+            <select id="line-chart-type" class="chart-filter">
+              <option value="both">Both</option>
+              <option value="income">Income Only</option>
+              <option value="expense">Expenses Only</option>
+            </select>
+            <select id="line-chart-period" class="chart-filter">
+              <option value="1day">Last 24 Hours</option>
+              <option value="1week">Last Week</option>
+              <option value="1month">Last Month</option>
+              <option value="3months">Last 3 Months</option>
+              <option value="6months">Last 6 Months</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-canvas-wrapper">
+          <canvas id="line-chart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <div class="summary-card income-card">
+        <h3>Total Income</h3>
+        <p class="summary-amount" id="total-income-summary">₹0.00</p>
+      </div>
+      <div class="summary-card expense-card">
+        <h3>Total Expenses</h3>
+        <p class="summary-amount" id="total-expense-summary">₹0.00</p>
+      </div>
+      <div class="summary-card savings-card">
+        <h3>Net Savings</h3>
+        <p class="summary-amount" id="net-savings-summary">₹0.00</p>
+      </div>
+    </div>
+
   </div>
 
-  <script>
-    // Get user data from sessionStorage
-    const username = sessionStorage.getItem('username');
-    if (username) {
-      document.getElementById('username-display').textContent = username;
-    } else {
-      // If no session data, redirect to login
-      alert('Please login first');
-      window.location.href = 'login.html';
-    }
-  </script>
+  <script src="dashboard.js"></script>
 </body>
 </html>

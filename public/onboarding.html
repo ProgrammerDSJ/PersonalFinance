@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome - Let's Get Started</title>
+  <link rel="stylesheet" href="onboarding.css">
+</head>
+<body>
+  <div class="onboarding-container">
+    <div class="onboarding-header">
+      <div class="logo-circle">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>Welcome to Your Financial Journey!</h1>
+      <p class="subtitle">Let's personalize your experience. This will only take a minute.</p>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <form id="onboarding-form">
+      <!-- Step 1: Interests -->
+      <div class="form-step active" data-step="1">
+        <div class="step-content">
+          <h2>What are your main interests?</h2>
+          <p class="step-description">Help us understand what matters most to you</p>
+          
+          <div class="interests-grid">
+            <label class="interest-card">
+              <input type="checkbox" name="interests" value="Saving Money">
+              <div class="card-content">
+                <span class="icon">💰</span>
+                <span class="label">Saving Money</span>
+              </div>
+            </label>
+
+            <label class="interest-card">
+              <input type="checkbox" name="interests" value="Investment">
+              <div class="card-content">
+                <span class="icon">📈</span>
+                <span class="label">Investment</span>
+              </div>
+            </label>
+
+            <label class="interest-card">
+              <input type="checkbox" name="interests" value="Budget Tracking">
+              <div class="card-content">
+                <span class="icon">📊</span>
+                <span class="label">Budget Tracking</span>
+              </div>
+            </label>
+
+            <label class="interest-card">
+              <input type="checkbox" name="interests" value="Expense Management">
+              <div class="card-content">
+                <span class="icon">💳</span>
+                <span class="label">Expense Management</span>
+              </div>
+            </label>
+
+            <label class="interest-card">
+              <input type="checkbox" name="interests" value="Financial Planning">
+              <div class="card-content">
+                <span class="icon">📝</span>
+                <span class="label">Financial Planning</span>
+              </div>
+            </label>
+
+            <label class="interest-card">
+              <input type="checkbox" name="interests" value="Debt Management">
+              <div class="card-content">
+                <span class="icon">🏦</span>
+                <span class="label">Debt Management</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="step-navigation">
+          <button type="button" class="btn-next" onclick="nextStep()" disabled>Next</button>
+        </div>
+      </div>
+
+      <!-- Step 2: App Usage -->
+      <div class="form-step" data-step="2">
+        <div class="step-content">
+          <h2>How do you plan to use this app?</h2>
+          <p class="step-description">Tell us about your primary focus</p>
+          
+          <div class="radio-options">
+            <label class="radio-card">
+              <input type="radio" name="appUsage" value="Track daily expenses and income" required>
+              <div class="card-content">
+                <span class="icon">📱</span>
+                <div class="text">
+                  <h3>Daily Tracking</h3>
+                  <p>Monitor everyday transactions</p>
+                </div>
+              </div>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="appUsage" value="Create and follow budgets">
+              <div class="card-content">
+                <span class="icon">🎯</span>
+                <div class="text">
+                  <h3>Budget Planning</h3>
+                  <p>Set and stick to budgets</p>
+                </div>
+              </div>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="appUsage" value="Analyze spending patterns">
+              <div class="card-content">
+                <span class="icon">🔍</span>
+                <div class="text">
+                  <h3>Spending Analysis</h3>
+                  <p>Understand where money goes</p>
+                </div>
+              </div>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="appUsage" value="Achieve financial goals">
+              <div class="card-content">
+                <span class="icon">🏆</span>
+                <div class="text">
+                  <h3>Goal Achievement</h3>
+                  <p>Work towards financial targets</p>
+                </div>
+              </div>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="appUsage" value="Get AI-powered financial advice">
+              <div class="card-content">
+                <span class="icon">🤖</span>
+                <div class="text">
+                  <h3>AI Assistance</h3>
+                  <p>Receive personalized advice</p>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="step-navigation">
+          <button type="button" class="btn-back" onclick="prevStep()">Back</button>
+          <button type="button" class="btn-next" onclick="nextStep()" disabled>Next</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Financial Goals -->
+      <div class="form-step" data-step="3">
+        <div class="step-content">
+          <h2>What are your financial goals?</h2>
+          <p class="step-description">Share your aspirations with us</p>
+          
+          <textarea 
+            id="financial-goals" 
+            name="financialGoals" 
+            placeholder="E.g., Save ₹50,000 for emergency fund, Pay off credit card debt, Save for a vacation, Build retirement corpus..."
+            rows="6"
+            required
+          ></textarea>
+          <div class="char-count">
+            <span id="goals-count">0</span>/500 characters
+          </div>
+        </div>
+
+        <div class="step-navigation">
+          <button type="button" class="btn-back" onclick="prevStep()">Back</button>
+          <button type="button" class="btn-next" onclick="nextStep()" disabled>Next</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Achievement Plan -->
+      <div class="form-step" data-step="4">
+        <div class="step-content">
+          <h2>How do you plan to achieve these goals?</h2>
+          <p class="step-description">Describe your strategy or approach</p>
+          
+          <textarea 
+            id="achievement-plan" 
+            name="achievementPlan" 
+            placeholder="E.g., Save ₹5,000 monthly, Cut down dining expenses by 30%, Take up freelance work on weekends, Invest in mutual funds..."
+            rows="6"
+            required
+          ></textarea>
+          <div class="char-count">
+            <span id="plan-count">0</span>/500 characters
+          </div>
+        </div>
+
+        <div class="step-navigation">
+          <button type="button" class="btn-back" onclick="prevStep()">Back</button>
+          <button type="button" class="btn-next" onclick="nextStep()" disabled>Next</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Timeframe -->
+      <div class="form-step" data-step="5">
+        <div class="step-content">
+          <h2>What's your target timeframe?</h2>
+          <p class="step-description">When do you want to achieve your goals?</p>
+          
+          <div class="timeframe-input">
+            <div class="input-group">
+              <label for="timeframe-value">Duration</label>
+              <input 
+                type="number" 
+                id="timeframe-value" 
+                name="timeframe" 
+                min="1" 
+                max="100" 
+                placeholder="Enter number"
+                required
+              >
+            </div>
+
+            <div class="input-group">
+              <label for="timeframe-unit">Unit</label>
+              <select id="timeframe-unit" name="timeframeUnit" required>
+                <option value="">Select</option>
+                <option value="months">Months</option>
+                <option value="years">Years</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="example-text">
+            <p>💡 Example: "12 months" or "2 years"</p>
+          </div>
+        </div>
+
+        <div class="step-navigation">
+          <button type="button" class="btn-back" onclick="prevStep()">Back</button>
+          <button type="submit" class="btn-submit" disabled>Complete Setup</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="step-indicator">
+      <span class="step-dot active" data-step="1"></span>
+      <span class="step-dot" data-step="2"></span>
+      <span class="step-dot" data-step="3"></span>
+      <span class="step-dot" data-step="4"></span>
+      <span class="step-dot" data-step="5"></span>
+    </div>
+  </div>
+
+  <script src="onboarding.js"></script>
+</body>
+</html>

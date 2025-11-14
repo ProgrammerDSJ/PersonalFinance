@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Mode - Financial Assistant</title>
+  <link rel="stylesheet" href="aimode.css">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <nav class="top-nav">
+    <a href="transactionlab.html" class="nav-link">Transaction Lab</a>
+    <a href="dashboard.html" class="nav-link">Dashboard</a>
+    <a href="aimode.html" class="nav-link active">AI Mode</a>
+  </nav>
+
+  <div class="ai-container">
+    <!-- Greeting Section -->
+    <div class="greeting-section" id="greeting-section">
+      <div class="greeting-content">
+        <div class="ai-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h1 class="greeting-title">Welcome back, <span id="username-display">User</span>!</h1>
+        <p class="greeting-subtitle">Ask me anything regarding your money!!!</p>
+        
+        <div class="suggestion-cards">
+          <div class="suggestion-card" data-prompt="Show me my spending summary for this month">
+            <div class="suggestion-icon">💰</div>
+            <div class="suggestion-text">Monthly Spending Summary</div>
+          </div>
+          <div class="suggestion-card" data-prompt="What are my top expense categories?">
+            <div class="suggestion-icon">📊</div>
+            <div class="suggestion-text">Top Expense Categories</div>
+          </div>
+          <div class="suggestion-card" data-prompt="Give me tips to save more money">
+            <div class="suggestion-icon">💡</div>
+            <div class="suggestion-text">Money Saving Tips</div>
+          </div>
+          <div class="suggestion-card" data-prompt="Analyze my income vs expenses trend">
+            <div class="suggestion-icon">📈</div>
+            <div class="suggestion-text">Income vs Expenses Analysis</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Section -->
+    <div class="chat-section" id="chat-section">
+      <div class="chat-messages" id="chat-messages">
+        <!-- Messages will be dynamically added here -->
+      </div>
+    </div>
+
+    <!-- Input Section -->
+    <div class="input-section">
+      <div class="input-container">
+        <textarea 
+          id="user-input" 
+          placeholder="Ask me about your finances, spending habits, or money management tips..."
+          rows="1"
+        ></textarea>
+        <button id="send-button" class="send-button" disabled>
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-footer">
+        <p>AI can make mistakes. Please verify important information.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="aimode.js"></script>
+</body>
+</html>

@@ -4,6 +4,8 @@ import bodyParser from "body-parser";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { MongoClient, ServerApiVersion } from "mongodb";
 
 dotenv.config();
 
@@ -17,9 +19,44 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// MongoDB Connection
+const mongoClient = new MongoClient(process.env.MONGO_URL, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
+});
+
+let db;
+let onboardingCollection;
+
+// Connect to MongoDB
+async function connectMongoDB() {
+  try {
+    await mongoClient.connect();
+    await mongoClient.db("admin").command({ ping: 1 });
+    console.log("✅ Successfully connected to MongoDB!");
+    
+    db = mongoClient.db("financeapp");
+    onboardingCollection = db.collection("user_onboarding");
+    
+    return true;
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err);
+    return false;
+  }
+}
+
+// Initialize MongoDB connection
+connectMongoDB();
+
 app.use(express.static("public"));
 
-// Registration API
+// Registration API - Only creates user account
 app.post("/api/register", async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -42,17 +79,131 @@ app.post("/api/register", async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert user into correct column
-    const { error } = await supabase.from("users").insert([
-      { username, email, password_hash: hashedPassword }
-    ]);
+    // Insert user into Supabase
+    const { data: newUser, error } = await supabase
+      .from("users")
+      .insert([{ username, email, password_hash: hashedPassword }])
+      .select()
+      .single();
 
     if (error) throw error;
 
-    res.json({ message: "User registered successfully", redirect: "/login.html" });
+    console.log("User registered successfully:", newUser.user_id);
+
+    res.json({ 
+      message: "User registered successfully", 
+      redirect: "/onboarding.html",
+      userId: newUser.user_id,
+      username: newUser.username,
+      email: newUser.email
+    });
   } catch (err) {
     console.error("Registration error:", err.message);
     res.status(500).json({ error: "Failed to register user" });
+  }
+});
+
+// Onboarding API - Stores additional user data in MongoDB
+app.post("/api/onboarding", async (req, res) => {
+  const { 
+    userId, 
+    interests, 
+    appUsage, 
+    financialGoals, 
+    achievementPlan, 
+    timeframe,
+    timeframeUnit 
+  } = req.body;
+
+  console.log("Received onboarding data for user:", userId);
+
+  if (!userId || !interests || !appUsage || !financialGoals || !achievementPlan || !timeframe || !timeframeUnit) {
+    return res.status(400).json({ 
+      success: false, 
+      error: "All onboarding fields are required" 
+    });
+  }
+
+  try {
+    // Check MongoDB connection
+    if (!onboardingCollection) {
+      throw new Error("MongoDB not connected");
+    }
+
+    // Check if onboarding data already exists for this user
+    const existingOnboarding = await onboardingCollection.findOne({ userId: userId });
+
+    if (existingOnboarding) {
+      // Update existing onboarding data
+      await onboardingCollection.updateOne(
+        { userId: userId },
+        {
+          $set: {
+            interests,
+            appUsage,
+            financialGoals,
+            achievementPlan,
+            timeframe: {
+              value: parseInt(timeframe),
+              unit: timeframeUnit
+            },
+            updatedAt: new Date()
+          }
+        }
+      );
+      console.log("Onboarding data updated for user:", userId);
+    } else {
+      // Insert new onboarding data
+      await onboardingCollection.insertOne({
+        userId: userId,
+        interests,
+        appUsage,
+        financialGoals,
+        achievementPlan,
+        timeframe: {
+          value: parseInt(timeframe),
+          unit: timeframeUnit
+        },
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      console.log("Onboarding data created for user:", userId);
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Onboarding completed successfully",
+      redirect: "/login.html"
+    });
+
+  } catch (err) {
+    console.error("Error saving onboarding data:", err);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to save onboarding data" 
+    });
+  }
+});
+
+// Get onboarding data for a user
+app.get("/api/onboarding/:userId", async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    if (!onboardingCollection) {
+      throw new Error("MongoDB not connected");
+    }
+
+    const onboardingData = await onboardingCollection.findOne({ userId: userId });
+
+    if (!onboardingData) {
+      return res.json({ success: true, data: null });
+    }
+
+    res.json({ success: true, data: onboardingData });
+  } catch (err) {
+    console.error("Error fetching onboarding data:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch onboarding data" });
   }
 });
 
@@ -276,7 +427,6 @@ app.get('/api/transactions/:user_id', async (req, res) => {
     }
     
     console.log(`Fetched ${data.length} transactions for user ${user_id} with filter ${filter}`);
-    console.log("Transactions:", data);
     res.json({ success: true, data });
   } catch (err) {
     console.error("Error fetching transactions:", err.message);
@@ -284,11 +434,108 @@ app.get('/api/transactions/:user_id', async (req, res) => {
   }
 });
 
+// AI Chat endpoint using Gemini with MongoDB and Supabase context
+app.post('/api/ai-chat', async (req, res) => {
+  const { message, systemPrompt, chatHistory, userId } = req.body;
+
+  console.log("AI Chat request received for user:", userId);
+
+  if (!message) {
+    return res.status(400).json({ 
+      success: false, 
+      error: "Message is required" 
+    });
+  }
+
+  try {
+    // Fetch onboarding data from MongoDB if userId is provided
+    let onboardingContext = "";
+    if (userId && onboardingCollection) {
+      const onboardingData = await onboardingCollection.findOne({ userId: userId });
+      
+      if (onboardingData) {
+        onboardingContext = `
+
+USER PROFILE AND GOALS:
+- Interests: ${onboardingData.interests}
+- App Usage Intent: ${onboardingData.appUsage}
+- Financial Goals: ${onboardingData.financialGoals}
+- Achievement Plan: ${onboardingData.achievementPlan}
+- Target Timeframe: ${onboardingData.timeframe.value} ${onboardingData.timeframe.unit}
+
+When providing advice, consider the user's stated goals and timeframe. Tailor your recommendations to help them achieve their specific financial objectives.
+`;
+        console.log("Added onboarding context to AI prompt");
+      }
+    }
+
+    // Initialize the model
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-latest" });
+
+    // Build the conversation history for context
+    let fullPrompt = systemPrompt + onboardingContext + "\n\n";
+    
+    // Add chat history if available
+    if (chatHistory && chatHistory.length > 0) {
+      fullPrompt += "Previous conversation:\n";
+      chatHistory.forEach(msg => {
+        fullPrompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+      });
+      fullPrompt += "\n";
+    }
+    
+    // Add current user message
+    fullPrompt += `User: ${message}\n\nAssistant:`;
+
+    console.log("Sending prompt to Gemini (length:", fullPrompt.length, "chars)");
+
+    // Generate response
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    const text = response.text();
+
+    console.log("Received response from Gemini (length:", text.length, "chars)");
+
+    res.json({ 
+      success: true, 
+      response: text 
+    });
+
+  } catch (err) {
+    console.error("Error calling Gemini API:", err);
+    
+    // Provide more specific error messages
+    let errorMessage = "Failed to get AI response";
+    
+    if (err.message && err.message.includes("API key")) {
+      errorMessage = "AI service configuration error. Please check API key.";
+    } else if (err.message && err.message.includes("quota")) {
+      errorMessage = "AI service quota exceeded. Please try again later.";
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      error: errorMessage 
+    });
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("🚀 Server is up and running!");
 });
 
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log("\nShutting down gracefully...");
+  await mongoClient.close();
+  console.log("MongoDB connection closed");
+  process.exit(0);
+});
+
 // Start server
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log("Gemini AI integration enabled");
+  console.log("MongoDB integration enabled");
 });
